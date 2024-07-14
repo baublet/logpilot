@@ -1,0 +1,40 @@
+{
+  "name": "logpilot",
+  "description": "Real time command runner and log viewer. Useful for development.",
+  "version": "0.0.1",
+  "license": "MIT",
+  "scripts": {
+    "build": "rm -rf dist && mkdir dist && pnpm run build:ui && tsx scripts/build.ts",
+    "build:ui": "cp src/index.html dist/index.html && bun build ./src/ui.tsx --outdir ./dist && bun build ./src/clientWorker.ts --outdir ./dist",
+    "build:production": "",
+    "dev:init": "dev:1:cleanup && dev:2:build",
+    "dev:1:cleanup": "bunx kill-port 8945 51515; rm -rf dist; mkdir dist",
+    "dev:2:build": "concurrently -k npm:build npm:build:ui",
+    "dev": "bun --watch src/nodeCli.ts bun test/test-script.mjs -s secret",
+    "dev:piped": "dev:init && bun test/test-script.mjs | bun --watch src/nodeCli.ts -s secret"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/react": "^18.2.57",
+    "@types/react-dom": "^18.2.19",
+    "@types/react-window": "^1.8.8",
+    "@types/ws": "^8.5.11",
+    "@types/yargs": "^17.0.32",
+    "ansi-to-html": "^0.7.2",
+    "chalk": "^5.3.0",
+    "concurrently": "latest",
+    "esbuild": "latest",
+    "express": "^4.18.3",
+    "get-port": "^7.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-virtualized-auto-sizer": "^1.0.22",
+    "react-virtuoso": "^4.7.1",
+    "tsx": "latest",
+    "typescript": "~5.5",
+    "ws": "^8.16.0",
+    "yargs": "^17.7.2"
+  },
+  "module": "src/cli.ts",
+  "type": "module"
+}
