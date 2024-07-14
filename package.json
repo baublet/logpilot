@@ -4,14 +4,12 @@
   "version": "0.0.1",
   "license": "MIT",
   "scripts": {
-    "build": "rm -rf dist && mkdir dist && pnpm run build:ui && tsx scripts/build.ts",
-    "build:ui": "cp src/index.html dist/index.html && bun build ./src/ui.tsx --outdir ./dist && bun build ./src/clientWorker.ts --outdir ./dist",
-    "build:production": "",
-    "dev:init": "dev:1:cleanup && dev:2:build",
-    "dev:1:cleanup": "bunx kill-port 8945 51515; rm -rf dist; mkdir dist",
-    "dev:2:build": "concurrently -k npm:build npm:build:ui",
-    "dev": "bun --watch src/nodeCli.ts bun test/test-script.mjs -s secret",
-    "dev:piped": "dev:init && bun test/test-script.mjs | bun --watch src/nodeCli.ts -s secret"
+    "build": "rm -rf dist && mkdir dist && cp src/index.html dist/index.html && pnpm tsx scripts/build.ts",
+    "dev:init": "pnpm dev:1:cleanup && pnpm dev:2:build",
+    "dev:1:cleanup": "npx kill-port 8945 51515; rm -rf dist; mkdir dist",
+    "dev:2:build": "pnpm run build",
+    "dev": "pnpm dev:init && tsx src/nodeCli.ts tsx test/test-script.mjs -s secret",
+    "dev:piped": "pnpm dev:init && node test/test-script.mjs | tsx src/nodeCli.ts -s secret"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

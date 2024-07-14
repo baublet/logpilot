@@ -3,7 +3,7 @@ const fullScriptStartTime = Date.now();
 import path from "path";
 import fs from "fs";
 import esbuild from "esbuild";
-import url from 'url';
+import url from "url";
 
 const __filename = url.fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -14,7 +14,16 @@ const distFilesToReplace: Record<string, string> = {
 };
 
 const dist = path.resolve(__dirname, "..", "./dist");
+
 const nodeEntry = path.resolve(__dirname, "..", "src", "nodeCli.ts");
+const uiEntry = path.resolve(__dirname, "..", "src", "ui.tsx");
+const clientWorkerEntry = path.resolve(
+  __dirname,
+  "..",
+  "src",
+  "clientWorker.ts"
+);
+
 const nodeOutput = path.resolve(dist, "nodeCli.js");
 
 console.log("📦  Bundling node CLI");
@@ -36,6 +45,48 @@ await esbuild
   .then(() => {
     console.log(
       `📦  Done bundling node CLI (${Date.now() - bundlingStartTime}ms)`
+    );
+  })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+
+const uiBundlingStartTime = Date.now();
+await esbuild
+  .build({
+    entryPoints: [uiEntry],
+    bundle: true,
+    minify: true,
+    outdir: dist,
+    sourcemap: false,
+    platform: "browser",
+  })
+  .then(() => {
+    console.log(
+      `📦  Done bundling node UI (${Date.now() - uiBundlingStartTime}ms)`
+    );
+  })
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  });
+
+const workerBundlingStartTime = Date.now();
+await esbuild
+  .build({
+    entryPoints: [clientWorkerEntry],
+    bundle: true,
+    minify: true,
+    outdir: dist,
+    sourcemap: false,
+    platform: "browser",
+  })
+  .then(() => {
+    console.log(
+      `📦  Done bundling node client worker (${
+        Date.now() - workerBundlingStartTime
+      }ms)`
     );
   })
   .catch((e) => {

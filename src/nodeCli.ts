@@ -5,10 +5,12 @@ import http from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import express from "express";
 import fs from "fs";
+import { fileURLToPath } from "url";
 
 import type { Server, WebSocketMessageTypes } from "./types";
 import { main } from "./cli";
 
+const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const MAX_LOGS_TO_SEND_IN_SINGLE_MESSAGE = 1000;
 const LOG_BATCH_TICK_TIME = 100; // How fast we send messages through websockets
 
@@ -202,12 +204,12 @@ async function getNodeServer({
   }
 
   let _exited = false;
-  function onExit(code: undefined | number) {
-    if (_exited) {
+  function onExit(code: undefined | number | null | string) {
+    if (_exited || typeof code !== "number") {
       return;
     }
     _exited = true;
-    console.log("📕  Server exiting");
+    console.log("📕  Server exiting", code);
     server.close();
     process.exit(code);
   }
