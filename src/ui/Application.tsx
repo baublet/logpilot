@@ -1,25 +1,14 @@
 import React from "react";
 import { Virtuoso, type VirtuosoHandle } from "react-virtuoso";
 import AutoSizer from "react-virtualized-auto-sizer";
-import { createRoot } from "react-dom/client";
-import {
-  serializeClientWorkerMessage,
-  type ClientWorkerMessageTypes,
-} from "./types";
+import { context } from "./helpers/context";
+import { debouncedScrollToIndex } from "./helpers/debouncedScrollToIndex";
+import { Button } from "./components/Button";
+import { Input } from "./components/Input";
+import { GhostButton } from "./components/GhostButton";
+import { ScrollSeekPlaceholder } from "./components/ScrollSeekPlaceholder";
 
-const workerURL = new URL(window.location.href);
-workerURL.pathname = "./clientWorker.js";
-const worker = new Worker(workerURL.href);
-
-const root = document.getElementById("root");
-
-if (!root) {
-  throw new Error("Root element not found");
-}
-
-createRoot(root).render(<App />);
-
-function App() {
+export function Application() {
   const [, _setRenderSeed] = React.useState(false);
   const rerender = React.useCallback(() => {
     _setRenderSeed((s) => !s);
@@ -167,7 +156,7 @@ function App() {
     } results`;
   }, [context.searchResults(), highlightedIndex]);
 
-  let searchTermTimerRef = React.useRef<Timer>();
+  let searchTermTimerRef = React.useRef<any>();
   const handleSearchTermChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (searchTermTimerRef.current) {
@@ -189,7 +178,7 @@ function App() {
   const [dialogOpen, setDialogOpen] = React.useState(true);
 
   const filterInputRef = React.useRef<HTMLInputElement>(null);
-  const filterTermTimerRef = React.useRef<Timer>();
+  const filterTermTimerRef = React.useRef<any>();
   const handleFilterOnChange = React.useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       if (filterTermTimerRef.current) {
@@ -413,288 +402,6 @@ function App() {
   );
 }
 
-let _scrollToIndexTimer: Timer = setTimeout(() => {}, 0);
-function debouncedScrollToIndex({
-  index,
-  scrollToIndex,
-}: {
-  index: number;
-  scrollToIndex: (index: number) => void;
-}) {
-  if (_scrollToIndexTimer) {
-    clearTimeout(_scrollToIndexTimer);
-  }
-  _scrollToIndexTimer = setTimeout(() => scrollToIndex(index), 50);
-}
-
-function ScrollSeekPlaceholder() {
-  return (
-    <div className="h-2 w-full p-2 overflow-hidden">
-      <div className="block h-2 bg-zinc-500/25">&nbsp;</div>
-    </div>
-  );
-}
-
-function Button(
-  props: React.DetailedHTMLProps<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    HTMLButtonElement
-  >
-) {
-  return (
-    <button
-      type="button"
-      className="cursor-pointer rounded bg-sky-500 px-2 py-1 text-xs font-semibold text-white shadow-sm hover:bg-sky-400 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
-      {...props}
-    />
-  );
-}
-
-function GhostButton(
-  props: React.DetailedHTMLProps<
-    React.ButtonHTMLAttributes<HTMLButtonElement>,
-    HTMLButtonElement
-  >
-) {
-  return (
-    <button
-      type="button"
-      className="cursor-pointer rounded border border-zinc-700 hover:border-sky-500 px-2 py-2 text-xs font-semibold text-white/75 hover:text-white shadow-sm hover:bg-sky-500/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
-      {...props}
-    />
-  );
-}
-
-function Input(
-  props: React.DetailedHTMLProps<
-    React.InputHTMLAttributes<HTMLInputElement>,
-    HTMLInputElement
-  >
-) {
-  return (
-    <input
-      type="text"
-      className="bg-zinc-900 outline outline-1 outline-zinc-700 hover:outline-zinc-400 focus-visible:outline-zinc-400 px-1 rounded text-zinc-50 w-full text-xs h-8 focus-visible:text-base"
-      {...props}
-    />
-  );
-}
-
-worker.onmessage = (event) => {
-  const parsed: ClientWorkerMessageTypes = JSON.parse(event.data);
-  if (parsed.type === "append-logs") {
-    context.appendLogs(parsed.logs, parsed.htmlLogs);
-    context.setAwaitingLogLines(false);
-  }
-  if (parsed.type === "search-result-set") {
-    context.appendSearchResults(parsed.results);
-    context.setAwaitingLogLines(false);
-  }
-  if (parsed.type === "started") {
-    context.commandStarted();
-    context.setAwaitingLogLines(false);
-  }
-  if (parsed.type === "stopped") {
-    context.commandStopped();
-    context.setAwaitingLogLines(false);
-  }
-  if (parsed.type === "awaiting-log-data") {
-    context.setAwaitingLogLines(true);
-  }
-
-  if (parsed.type === "filtered-lines-count-result") {
-    context.addPreviewLineCount(parsed.count);
-  }
-
-  if (parsed.type === "filtered-lines-result") {
-    context.appendFilterResults(parsed.query, parsed.results);
-  }
-};
-
-let _logs: string[] = [];
-let _htmlLogs: string[] = [];
-let _searchQuery: string | undefined = undefined;
-let _searchResults: number[] = [];
-let _commandRunning = false;
-let _awaitingLogLines = false;
-let _clientOffset = 0;
-let _previewLineCount = 0;
-let _lineCountQuery = "";
-const filters = new Map<string, Set<number>>();
-const _pushListeners: (() => void)[] = [];
-const context = {
-  getAwaitingLogLines: () => _awaitingLogLines,
-  setAwaitingLogLines: (waiting: boolean) => {
-    if (_awaitingLogLines === waiting) {
-      return;
-    }
-    _awaitingLogLines = waiting;
-    _pushListeners.forEach((listener) => listener());
-  },
-  commandStarted: () => {
-    if (_commandRunning) {
-      return;
-    }
-    _commandRunning = true;
-    _pushListeners.forEach((listener) => listener());
-  },
-  commandStopped: () => {
-    if (!_commandRunning) {
-      return;
-    }
-    _commandRunning = false;
-    _pushListeners.forEach((listener) => listener());
-  },
-  restart: () => {
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "restart",
-      })
-    );
-  },
-  stop: () => {
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "stop",
-      })
-    );
-  },
-  enqueuePreviewLineCount: (query: string) => {
-    _lineCountQuery = query;
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "get-filtered-lines-count",
-        query,
-        clientOffset: _clientOffset,
-      })
-    );
-    _previewLineCount = 0;
-    _pushListeners.forEach((listener) => listener());
-  },
-  clear: () => {
-    _clientOffset = _logs.length;
-    _previewLineCount = 0;
-    console.log({
-      _lineCountQuery,
-      _clientOffset,
-    });
-    // Re-enqueue the filter count worker thing
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "get-filtered-lines-count",
-        query: _lineCountQuery,
-        clientOffset: _clientOffset,
-      })
-    );
-    // Remove and re-apply all filters with the new offset
-    filters.forEach((filter) => {
-      filter.clear();
-      worker.postMessage(
-        serializeClientWorkerMessage({
-          type: "get-filtered-lines",
-          query: _lineCountQuery,
-          clientOffset: _clientOffset,
-        })
-      );
-    });
-    _pushListeners.forEach((listener) => listener());
-  },
-  getPreviewLineCount: () => _previewLineCount,
-  addPreviewLineCount: (count: number) => {
-    _previewLineCount += count;
-    _pushListeners.forEach((listener) => listener());
-  },
-  appendFilterResults: (query: string, results: number[]) => {
-    const filter = filters.get(query);
-    if (!filter) {
-      return;
-    }
-    results.map((result) => filter.add(result));
-    _pushListeners.forEach((listener) => listener());
-  },
-  isFilteredOut: (index: number) => {
-    const filtersList = Array.from(filters.values());
-    for (const filter of filtersList) {
-      if (filter.has(index)) {
-        return false;
-      }
-    }
-    return true;
-  },
-  getFilterKnownCount: (query: string) => {
-    const filterSet = filters.get(query);
-    if (!filterSet) {
-      return;
-    }
-    return filterSet.size;
-  },
-  addFilter: (query: string) => {
-    if (filters.has(query)) {
-      return;
-    }
-    filters.set(query, new Set());
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "get-filtered-lines",
-        query,
-        clientOffset: _clientOffset,
-      })
-    );
-  },
-  removeFilter: (query: string) => {
-    if (!filters.has(query)) {
-      return;
-    }
-    filters.delete(query);
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "remove-filter",
-        query,
-      })
-    );
-    _pushListeners.forEach((listener) => listener());
-  },
-  appendSearchResults: (results: number[]) => {
-    _searchResults.push(...results);
-    _searchResults.sort((a, b) => a - b);
-    _searchResults = _searchResults.filter(
-      (result, index) => _searchResults.indexOf(result) === index
-    );
-    _pushListeners.forEach((listener) => listener());
-  },
-  search: (query: string) => {
-    if (query === _searchQuery) {
-      return;
-    }
-    _searchQuery = query;
-    _searchResults = [];
-    worker.postMessage(
-      serializeClientWorkerMessage({
-        type: "search",
-        query: _searchQuery,
-        clientOffset: _clientOffset,
-      })
-    );
-    _pushListeners.forEach((listener) => listener());
-  },
-  searchResults: () => _searchResults,
-  setClientOffset: (clientOffset: number) => {
-    _clientOffset = clientOffset;
-  },
-  getClientOffset: () => _clientOffset,
-  appendLogs: (logs: string[], htmlLogs: string[]) => {
-    _logs.push(...logs);
-    _htmlLogs.push(...htmlLogs);
-    _pushListeners.forEach((listener) => listener());
-  },
-  getAll: () => _logs,
-  get: (index: number) => _logs[index],
-  getHtml: (index: number) => _htmlLogs[index],
-  count: () => _logs.length,
-  subscribe: (listener: () => void) => {
-    _pushListeners.push(listener);
-  },
-};
 
 function getClassName({
   highlightedItemIndex,

@@ -3,13 +3,14 @@
   "description": "Real time command runner and log viewer. Useful for development.",
   "version": "0.0.1",
   "license": "MIT",
+  "bin": "dist/nodeCli.js",
   "scripts": {
-    "build": "rm -rf dist && mkdir dist && cp src/index.html dist/index.html && pnpm tsx scripts/build.ts",
+    "build": "rm -rf dist && mkdir dist && cp src/index.html dist/index.html && pnpm tsx scripts/build.mts",
     "dev:init": "pnpm dev:1:cleanup && pnpm dev:2:build",
     "dev:1:cleanup": "npx kill-port 8945 51515; rm -rf dist; mkdir dist",
     "dev:2:build": "pnpm run build",
-    "dev": "pnpm dev:init && tsx src/nodeCli.ts tsx test/test-script.mjs -s secret",
-    "dev:piped": "pnpm dev:init && node test/test-script.mjs | tsx src/nodeCli.ts -s secret"
+    "dev": "pnpm dev:init && node dist/nodeCli.js tsx test/test-script.mjs -s secret",
+    "dev:piped": "pnpm dev:init && node test/test-script.mjs | node dist/nodeCli.js -s secret"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
@@ -32,7 +33,5 @@
     "typescript": "~5.5",
     "ws": "^8.16.0",
     "yargs": "^17.7.2"
-  },
-  "module": "src/cli.ts",
-  "type": "module"
+  }
 }

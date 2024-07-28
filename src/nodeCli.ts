@@ -5,12 +5,10 @@ import http from "http";
 import { WebSocketServer, type WebSocket } from "ws";
 import express from "express";
 import fs from "fs";
-import { fileURLToPath } from "url";
 
 import type { Server, WebSocketMessageTypes } from "./types";
-import { main } from "./cli";
+import { main } from "./cli/entry";
 
-const __dirname = fileURLToPath(new URL(".", import.meta.url));
 const MAX_LOGS_TO_SEND_IN_SINGLE_MESSAGE = 1000;
 const LOG_BATCH_TICK_TIME = 100; // How fast we send messages through websockets
 
@@ -40,16 +38,22 @@ const websocketPool = (() => {
   const pool = new Set<WebSocket>();
   const cursorPositions = new WeakMap<WebSocket, number>();
   return {
-    count: () => pool.size,
+    count: () => {
+      return pool.size;
+    },
     add: (websocket: WebSocket) => {
       pool.add(websocket);
       cursorPositions.set(websocket, 0);
     },
-    remove: (websocket: WebSocket) => pool.delete(websocket),
-    each: (callback: (websocket: WebSocket) => void) =>
-      pool.forEach((websocket) => callback(websocket)),
-    getCursorPosition: (websocket: WebSocket) =>
-      cursorPositions.get(websocket) || 0,
+    remove: (websocket: WebSocket) => {
+      return pool.delete(websocket);
+    },
+    each: (callback: (websocket: WebSocket) => void) => {
+      return pool.forEach((websocket) => callback(websocket));
+    },
+    getCursorPosition: (websocket: WebSocket) => {
+      return cursorPositions.get(websocket) || 0;
+    },
     setCursorPosition: (websocket: WebSocket, cursorPosition: number) => {
       cursorPositions.set(websocket, cursorPosition);
     },
@@ -106,6 +110,7 @@ async function getNodeServer({
     });
     pushing = false;
   }
+
   setInterval(() => {
     maybePushLogs();
   }, LOG_BATCH_TICK_TIME);
@@ -254,7 +259,9 @@ async function getNodeServer({
         websocket.send(JSON.stringify({ type: "stopped" }))
       );
     },
-    getClientCount: () => websocketPool.count(),
+    getClientCount: () => {
+      return websocketPool.count();
+    },
   };
 }
 
@@ -270,4 +277,9 @@ function getSecureRandomString() {
   });
 }
 
-main({ getServer: getNodeServer });
+main({ getServer: getNodeServer })
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  });

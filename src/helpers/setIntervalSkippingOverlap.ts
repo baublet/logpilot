@@ -2,7 +2,7 @@ export function setIntervalSkippingOverlap(
   callback: Callback,
   interval: number,
   options?: SetIntervalSkippingOverlapOptions
-): Timer {
+): NodeJS.Timer {
   let isRunning = false;
 
   function setRunning() {
