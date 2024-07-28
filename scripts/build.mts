@@ -52,6 +52,7 @@ await esbuild
     process.exit(1);
   });
 
+console.log("📦  Bundling UI");
 const uiBundlingStartTime = Date.now();
 await esbuild
   .build({
@@ -63,15 +64,14 @@ await esbuild
     platform: "browser",
   })
   .then(() => {
-    console.log(
-      `📦  Done bundling node UI (${Date.now() - uiBundlingStartTime}ms)`
-    );
+    console.log(`📦  Done bundling UI (${Date.now() - uiBundlingStartTime}ms)`);
   })
   .catch((e) => {
     console.error(e);
     process.exit(1);
   });
 
+console.log("📦  Bundling client worker");
 const workerBundlingStartTime = Date.now();
 await esbuild
   .build({
@@ -84,7 +84,7 @@ await esbuild
   })
   .then(() => {
     console.log(
-      `📦  Done bundling node client worker (${
+      `📦  Done bundling client worker (${
         Date.now() - workerBundlingStartTime
       }ms)`
     );

@@ -1,3 +1,7 @@
+/**
+ * Scrolls to a place on screen, with a debounce, so that we minimize screen
+ * jitter.
+ */
 export function debouncedScrollToIndex({
   index,
   scrollToIndex,

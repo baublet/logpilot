@@ -1,6 +1,10 @@
 import { serializeClientWorkerMessage } from "../../types";
 import { worker } from "./worker";
 
+/**
+ * An in-process context used on the UI to help efficiently manage large amounts
+ * of data without involving React where we don't want it.
+ */
 export const context = (() => {
   let _logs: string[] = [];
   let _htmlLogs: string[] = [];
