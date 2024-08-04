@@ -143,11 +143,14 @@ async function getNodeServer({
     if (url.includes("&keepAlive")) {
       return res.status(200).send("");
     }
+
     res.setHeader("Content-Type", "text/html");
     res.setHeader("Cache-Control", "no-cache");
     res.send(indexHtmlContent());
+
     return;
   });
+
   const server = http.createServer(app);
   const websocketServer = new WebSocketServer({
     noServer: true,
@@ -213,6 +216,7 @@ async function getNodeServer({
   const promiseThatResolvesOnClose = new Promise<void>((resolve) => {
     _resolve = resolve;
   });
+
   function onExit(code: undefined | number | null | string) {
     if (_exited || typeof code !== "number") {
       return;
@@ -231,7 +235,9 @@ async function getNodeServer({
     processToken,
     start: () => {
       return new Promise<void>((resolve) => {
-        server.listen(port, hostname, undefined, () => resolve());
+        server.listen(port, hostname, undefined, () => {
+          resolve();
+        });
       });
     },
     stop: () => {
@@ -247,7 +253,9 @@ async function getNodeServer({
     getLogCount: () => {
       return logLines.length.toLocaleString();
     },
-    getPort: () => port,
+    getPort: () => {
+      return port;
+    },
     onClientRequestStop: (callback: typeof _clientRequestsStopHandler) => {
       _clientRequestsStopHandler = callback;
     },

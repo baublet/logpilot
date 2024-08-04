@@ -53,6 +53,11 @@ export async function main({
       type: "number",
       default: 1000,
     })
+    .option("command", {
+      alias: "c",
+      type: "string",
+      describe: "The command to run. If empty, will look for piped input to utilize."
+    })
     .help("h")
     .alias("h", "help")
     .epilog("LogPilot: A low-friction log service for local terminal commands")
@@ -69,12 +74,12 @@ export async function main({
 
   await server.start();
 
-  const command = cliArgs._.filter(Boolean).map((arg) => String(arg));
+  const command = cliArgs.command?.split(" ");
 
-  if (getInputMode() === "pipe") {
-    streamReadable(server);
-  } else {
+  if (command) {
     runCommand(command, server);
+  } else if(getInputMode() === "pipe") {
+    streamReadable(server);
   }
 
   await renderInterface({

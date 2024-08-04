@@ -3,10 +3,10 @@ import type { Server } from "../types";
 
 export async function renderInterface({
   server,
-  command,
+  command = [],
   hostname,
 }: {
-  command: string[];
+  command?: string[];
   server: Server;
   hostname: string;
 }) {

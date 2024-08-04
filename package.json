@@ -9,7 +9,7 @@
     "dev:init": "pnpm dev:1:cleanup && pnpm dev:2:build",
     "dev:1:cleanup": "npx kill-port 8945 51515; rm -rf dist; mkdir dist",
     "dev:2:build": "pnpm run build",
-    "dev": "pnpm dev:init && node dist/nodeCli.js tsx test/test-script.mjs -s secret",
+    "dev": "pnpm dev:init && node dist/nodeCli.js -s secret -c \"node test/test-script.mjs\"",
     "dev:piped": "pnpm dev:init && node test/test-script.mjs | node dist/nodeCli.js -s secret"
   },
   "devDependencies": {
