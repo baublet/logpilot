@@ -209,6 +209,10 @@ async function getNodeServer({
   }
 
   let _exited = false;
+  let _resolve: undefined | ((value: void | PromiseLike<void>) => void);
+  const promiseThatResolvesOnClose = new Promise<void>((resolve) => {
+    _resolve = resolve;
+  });
   function onExit(code: undefined | number | null | string) {
     if (_exited || typeof code !== "number") {
       return;
@@ -216,6 +220,7 @@ async function getNodeServer({
     _exited = true;
     console.log("📕  Server exiting", code);
     server.close();
+    _resolve?.();
     process.exit(code);
   }
 
@@ -262,6 +267,9 @@ async function getNodeServer({
     getClientCount: () => {
       return websocketPool.count();
     },
+    waitForClose: () => {
+      return promiseThatResolvesOnClose;
+    },
   };
 }
 
@@ -278,7 +286,9 @@ function getSecureRandomString() {
 }
 
 main({ getServer: getNodeServer })
-  .then(() => process.exit(0))
+  .then(() => {
+    process.exit(0);
+  })
   .catch((error) => {
     console.error(error);
     process.exit(1);

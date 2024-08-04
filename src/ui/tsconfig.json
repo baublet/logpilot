@@ -1,4 +1,5 @@
 {
+  "include": ["./*.ts", "./*.tsx"],
   "compilerOptions": {
     "lib": ["ESNext", "DOM"],
     "target": "ESNext",
@@ -7,6 +8,6 @@
     "moduleResolution": "bundler",
     "noEmit": true,
     "allowImportingTsExtensions": true,
-    "esModuleInterop": true,
+    "esModuleInterop": true
   }
 }

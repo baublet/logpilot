@@ -71,17 +71,19 @@ export async function main({
 
   const command = cliArgs._.filter(Boolean).map((arg) => String(arg));
 
-  if (getInputMode()) {
+  if (getInputMode() === "pipe") {
     streamReadable(server);
   } else {
     runCommand(command, server);
   }
 
-  renderInterface({
+  await renderInterface({
     server,
     command,
     hostname,
   });
+
+  await server.waitForClose();
 }
 
 process.on("exit", () => {

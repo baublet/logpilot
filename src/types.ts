@@ -53,4 +53,5 @@ export interface Server {
   getLastNLogs: (count: number) => string[];
   getLogCount: () => string;
   getClientCount: () => number;
+  waitForClose: () => Promise<void>;
 }
